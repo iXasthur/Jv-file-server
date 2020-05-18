@@ -126,10 +126,14 @@ public class APIHandler {
             }
             case "PUT": {
                 // curl localhost:8080/uploadFolder/uploaded.txt --upload-file upload.txt
-
                 response = new HTTPResponse(500);
                 try {
-                    Files.createDirectories(filePath.getParent());
+                    if (!Files.exists(filePath.getParent())) {
+                        Files.createDirectories(filePath.getParent());
+                    }
+                    if (Files.exists(filePath)) {
+                        Files.delete(filePath);
+                    }
                     Files.createFile(filePath);
                     try (FileOutputStream stream = new FileOutputStream(filePathString)) {
                         stream.write(request.getData());
@@ -139,7 +143,6 @@ public class APIHandler {
                 } catch (IOException e) {
 //                    e.printStackTrace();
                 }
-
                 break;
             }
             case "DELETE": {
@@ -154,6 +157,7 @@ public class APIHandler {
             }
         }
         response.addHeader("Connection", "Closed");
+        response.addHeader("Server", "Jv-file-server");
     }
 
     public HTTPResponse getResponse() {

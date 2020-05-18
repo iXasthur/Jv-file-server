@@ -54,6 +54,7 @@ public class HTTPRequest {
                 inputStream.readNBytes(2); // skip \r\n
                 count = readChunkSize(inputStream);
             }
+            inputStream.readNBytes(2);
         }
     }
 
