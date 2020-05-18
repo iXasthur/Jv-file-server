@@ -15,12 +15,15 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Comparator;
+
+import static java.nio.file.FileVisitResult.CONTINUE;
 
 public class APIHandler {
 
@@ -146,6 +149,29 @@ public class APIHandler {
                 break;
             }
             case "DELETE": {
+                // curl -X DELETE localhost:8080/file
+
+                response = new HTTPResponse(500);
+                if (request.getRelativePath().equals("/")) {
+                    response = new HTTPResponse(403);
+                    response.setData("Unable to remove root folder".getBytes(), "txt");
+                    return;
+                } else {
+                    if (Files.exists(filePath)) {
+                        try {
+                            Files.walk(filePath)
+                                    .sorted(Comparator.reverseOrder())
+                                    .map(Path::toFile)
+                                    .forEach(File::delete);
+                            response = new HTTPResponse(201);
+                            response.setData("Successfully deleted".getBytes(), "txt");
+                        } catch (IOException e) {
+//                            e.printStackTrace();
+                        }
+                    } else {
+                        response = new HTTPResponse(404);
+                    }
+                }
 
                 break;
             }
