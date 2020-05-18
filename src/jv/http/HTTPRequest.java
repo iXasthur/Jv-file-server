@@ -2,9 +2,13 @@ package jv.http;
 
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Scanner;
+import java.util.Vector;
 
 public class HTTPRequest {
 
@@ -12,21 +16,64 @@ public class HTTPRequest {
     private final HashMap<String, String> headers = new HashMap<>(0);
     private byte[] data = new byte[]{};
 
-    public HTTPRequest(BufferedReader reader) throws IOException {
-        String line = reader.readLine();
-        if (line == null) {
+    public HTTPRequest(DataInputStream inputStream) throws IOException {
+        Scanner scanner = new Scanner(inputStream);
+        String line;
+        if (scanner.hasNextLine()) {
+            line = scanner.nextLine();
+            requestLine = line;
+        } else {
             throw new IOException("Nothing to read from socket");
         }
-        requestLine = line;
 
         // Read headers
-        while ((line = reader.readLine()) != null && !line.equals("")) {
-            int spaceIndex = line.indexOf(" ");
-            headers.put(line.substring(0, spaceIndex-1), line.substring(spaceIndex+1));
+        while (scanner.hasNextLine()) {
+            line = scanner.nextLine();
+            if (!line.equals("")) {
+                int spaceIndex = line.indexOf(" ");
+                headers.put(line.substring(0, spaceIndex - 1), line.substring(spaceIndex + 1));
+            } else {
+                break;
+            }
         }
 
-        // Read data
+        if (headers.get("Content-Length") != null) {
+            int count = Integer.parseInt(headers.get("Content-Length"));
+            data = inputStream.readNBytes(count);
+        } else if (headers.get("Transfer-Encoding") != null && headers.get("Transfer-Encoding").equals("chunked")) {
+            // Read chunked data
+            int count = readChunkSize(inputStream);
+            while (count > 0) {
+                byte[] buffer = inputStream.readNBytes(count);
 
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                outputStream.write(data);
+                outputStream.write(buffer);
+                data = outputStream.toByteArray();
+
+                inputStream.readNBytes(2); // skip \r\n
+                count = readChunkSize(inputStream);
+            }
+        }
+    }
+
+    private int readChunkSize(DataInputStream inputStream) throws IOException {
+        Vector<Byte> bytes = new Vector<>(0);
+        while (true) {
+            byte b = inputStream.readByte();
+            if (bytes.size() > 0) {
+                if (bytes.lastElement() == 13 && b == 10) {
+                    bytes.remove(bytes.lastElement());
+                    break;
+                }
+            }
+            bytes.add(b);
+        }
+        byte[] buffer = new byte[bytes.size()];
+        for (int i = 0; i < bytes.size(); i++) {
+            buffer[i] = bytes.elementAt(i);
+        }
+        return Integer.parseInt(new String(buffer),16);
     }
 
     public void outputRequest() {

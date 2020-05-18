@@ -3,10 +3,7 @@ package jv.fileserver;
 import jv.http.HTTPRequest;
 import jv.http.HTTPResponse;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.Socket;
 
 public class FileServerThread extends Thread {
@@ -23,10 +20,10 @@ public class FileServerThread extends Thread {
     public void run() {
         super.run();
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader((socket.getInputStream())));
+        try (DataInputStream inputStream = new DataInputStream(socket.getInputStream());
              DataOutputStream outputStream = new DataOutputStream(socket.getOutputStream())){
 
-            HTTPRequest request = new HTTPRequest(reader);
+            HTTPRequest request = new HTTPRequest(inputStream);
             HTTPResponse response = new APIHandler(request, serverFilesFolderPath).getResponse();
             response.send(outputStream);
 

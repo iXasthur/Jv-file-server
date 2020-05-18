@@ -9,6 +9,8 @@ public class HTTPResponse {
     private static class HTTPStatus {
         private static final HashMap<Integer, String> statuses = new HashMap<>(0);
         static {
+            statuses.put(100, "Continue");
+
             statuses.put(200, "OK");
             statuses.put(201, "Created"); // Created file
             statuses.put(204, "No Content"); // Only file info
