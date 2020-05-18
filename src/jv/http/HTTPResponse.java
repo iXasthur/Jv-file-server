@@ -9,12 +9,13 @@ public class HTTPResponse {
     private static class HTTPStatus {
         private static final HashMap<Integer, String> statuses = new HashMap<>(0);
         static {
-            statuses.put(400, "Bad Request");
-            statuses.put(404, "Not Found"); // File not found
-
             statuses.put(200, "OK");
             statuses.put(201, "Created"); // Created file
             statuses.put(204, "No Content"); // Only file info
+
+            statuses.put(400, "Bad Request");
+            statuses.put(403, "Forbidden");
+            statuses.put(404, "Not Found"); // File not found
 
             statuses.put(501, "Not Implemented");
         }
@@ -41,8 +42,11 @@ public class HTTPResponse {
         headers.put(key, value);
     }
 
-    public void setData(byte[] data) {
+    public void setData(byte[] data, String contentTypeExtension) {
+        // add content length header
         this.data = data;
+        addHeader("Content-Length", String.valueOf(data.length));
+        addHeader("Content-Type", HTTPContentType.getContentTypeFor(contentTypeExtension));
     }
 
     public void send(DataOutputStream outputStream) throws IOException {

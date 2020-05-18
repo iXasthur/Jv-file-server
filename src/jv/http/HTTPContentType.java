@@ -21,6 +21,10 @@ public class HTTPContentType {
     }
 
     public static String getContentTypeFor(String extension) {
-        return types.get(extension);
+        String contentType = types.get(extension);
+        if (contentType == null) {
+            contentType = "application/octet-stream";
+        }
+        return contentType;
     }
 }
