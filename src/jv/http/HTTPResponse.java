@@ -17,6 +17,7 @@ public class HTTPResponse {
             statuses.put(403, "Forbidden");
             statuses.put(404, "Not Found"); // File not found
 
+            statuses.put(500, "Internal Server Error");
             statuses.put(501, "Not Implemented");
         }
 

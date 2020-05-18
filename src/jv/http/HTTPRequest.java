@@ -10,6 +10,7 @@ public class HTTPRequest {
 
     private final String requestLine;
     private final HashMap<String, String> headers = new HashMap<>(0);
+    private byte[] data = new byte[]{};
 
     public HTTPRequest(BufferedReader reader) throws IOException {
         String line = reader.readLine();
@@ -21,8 +22,11 @@ public class HTTPRequest {
         // Read headers
         while ((line = reader.readLine()) != null && !line.equals("")) {
             int spaceIndex = line.indexOf(" ");
-            headers.put(line.substring(0, spaceIndex-1), line.substring(spaceIndex+1, line.length()));
+            headers.put(line.substring(0, spaceIndex-1), line.substring(spaceIndex+1));
         }
+
+        // Read data
+
     }
 
     public void outputRequest() {
@@ -56,5 +60,9 @@ public class HTTPRequest {
             return path;
         }
         return null;
+    }
+
+    public byte[] getData() {
+        return data;
     }
 }
