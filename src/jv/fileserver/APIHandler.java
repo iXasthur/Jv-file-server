@@ -15,6 +15,7 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.file.Files;
@@ -75,14 +76,15 @@ public class APIHandler {
 
     synchronized public void parseRequest() {
         String method = request.getRequestMethod();
+        String filePathString = serverFilesFolderPath + request.getRelativePath();
+        Path filePath = Paths.get(filePathString);
+
         switch (method) {
             case "GET": {
                 // curl -v localhost:8080
 
                 // If folder passed, return its structure
                 // If file - return file with download headers
-                String filePathString = serverFilesFolderPath + request.getRelativePath();
-                Path filePath = Paths.get(filePathString);
                 if (Files.exists(filePath)) {
                     // Send file
                     if (Files.isRegularFile(filePath)) {
@@ -120,18 +122,28 @@ public class APIHandler {
                     response = new HTTPResponse(404);
                     response.setData("File does not exist".getBytes(), "txt");
                 }
-                response.addHeader("Connection", "Closed");
                 break;
             }
             case "PUT": {
-                // curl localhost --upload-file filename
+                // curl localhost:8080/uploadFolder/uploaded.txt --upload-file upload.txt
 
-//                request.outputRequest();
-//                System.out.println();
+                response = new HTTPResponse(500);
+                try {
+                    Files.createDirectories(filePath.getParent());
+                    Files.createFile(filePath);
+                    try (FileOutputStream stream = new FileOutputStream(filePathString)) {
+                        stream.write(request.getData());
+                    }
+                    response = new HTTPResponse(201);
+                    response.setData("Created new file".getBytes(), "txt");
+                } catch (IOException e) {
+//                    e.printStackTrace();
+                }
 
                 break;
             }
             case "DELETE": {
+
                 break;
             }
             case "HEAD": {
@@ -141,6 +153,7 @@ public class APIHandler {
                 break;
             }
         }
+        response.addHeader("Connection", "Closed");
     }
 
     public HTTPResponse getResponse() {
