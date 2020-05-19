@@ -1,5 +1,6 @@
 package jv.fileserver;
 
+import jv.http.HTTPContentType;
 import jv.http.HTTPRequest;
 import jv.http.HTTPResponse;
 import org.w3c.dom.Attr;
@@ -77,14 +78,64 @@ public class APIHandler {
         return writer.getBuffer().toString();
     }
 
+    private String extractFileExtension(String fileName) {
+        String fileExtension = "";
+        if (fileName.contains(".")) {
+            int index = fileName.lastIndexOf(".");
+            if (index < fileName.length() -1) {
+                fileExtension = fileName.substring(index + 1);
+            }
+        }
+        return fileExtension;
+    }
+
     synchronized public void parseRequest() {
         String method = request.getRequestMethod();
         String filePathString = serverFilesFolderPath + request.getRelativePath();
         Path filePath = Paths.get(filePathString);
 
         switch (method) {
+            case "HEAD": {
+                // curl --head localhost:8080/file
+
+                if (Files.exists(filePath)) {
+                    // Send file
+                    if (Files.isRegularFile(filePath)) {
+                        response = new HTTPResponse(500);
+
+                        try {
+                            String fileName = filePath.getFileName().toString();
+                            String fileExtension = extractFileExtension(fileName);
+
+                            response = new HTTPResponse(200);
+                            response.addHeader("Content-Length", String.valueOf(Files.size(filePath)));
+                            response.addHeader("Content-Type", HTTPContentType.getContentTypeFor(fileExtension));
+                            response.addHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+                        } catch (IOException e) {
+//                            e.printStackTrace();
+                        }
+                    } else if (Files.isDirectory(filePath)) {
+                        // Send directory structure
+                        response = new HTTPResponse(500);
+
+                        try {
+                            String xmlString = getDirectoryStructureXML(request.getRelativePath());
+                            response = new HTTPResponse(200);
+                            response.addHeader("Content-Length", String.valueOf(xmlString.getBytes().length));
+                            response.addHeader("Content-Type", HTTPContentType.getContentTypeFor("txt"));
+                        } catch (IOException | ParserConfigurationException | TransformerException e) {
+//                            e.printStackTrace();
+                        }
+                    }
+                } else {
+                    response = new HTTPResponse(404);
+                    response.setData("File does not exist".getBytes(), "txt");
+                }
+
+                break;
+            }
             case "GET": {
-                // curl -v localhost:8080
+                // curl localhost:8080
 
                 // If folder passed, return its structure
                 // If file - return file with download headers
@@ -96,13 +147,8 @@ public class APIHandler {
                         try {
                             byte[] bytes = Files.readAllBytes(filePath);
                             String fileName = filePath.getFileName().toString();
-                            String fileExtension = "";
-                            if (fileName.contains(".")) {
-                                int index = fileName.lastIndexOf(".");
-                                if (index < fileName.length() -1) {
-                                    fileExtension = fileName.substring(index + 1);
-                                }
-                            }
+                            String fileExtension = extractFileExtension(fileName);
+
                             response = new HTTPResponse(200);
                             response.setData(bytes, fileExtension);
                             response.addHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
@@ -163,7 +209,7 @@ public class APIHandler {
                                     .sorted(Comparator.reverseOrder())
                                     .map(Path::toFile)
                                     .forEach(File::delete);
-                            response = new HTTPResponse(201);
+                            response = new HTTPResponse(200);
                             response.setData("Successfully deleted".getBytes(), "txt");
                         } catch (IOException e) {
 //                            e.printStackTrace();
@@ -173,9 +219,6 @@ public class APIHandler {
                     }
                 }
 
-                break;
-            }
-            case "HEAD": {
                 break;
             }
             default: {
