@@ -3,7 +3,9 @@ package jv.fileserver;
 import jv.http.HTTPRequest;
 import jv.http.HTTPResponse;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.Socket;
 
 public class FileServerThread extends Thread {

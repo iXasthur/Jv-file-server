@@ -1,7 +1,5 @@
 import jv.fileserver.FileServerThread;
-import jv.http.HTTPResponse;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;

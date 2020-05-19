@@ -1,11 +1,11 @@
 package jv.http;
 
 
-import java.io.*;
-import java.lang.reflect.Array;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
 import java.util.Vector;
