@@ -58,6 +58,10 @@ public class HTTPRequest {
         }
     }
 
+    public String getHeaderValue(String key) {
+        return headers.get(key);
+    }
+
     private int readChunkSize(DataInputStream inputStream) throws IOException {
         Vector<Byte> bytes = new Vector<>(0);
         while (true) {

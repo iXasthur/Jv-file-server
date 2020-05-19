@@ -176,47 +176,81 @@ public class APIHandler {
             case "PUT": {
                 // curl localhost:8080/uploadFolder/uploaded.txt --upload-file upload.txt
                 response = new HTTPResponse(500);
-                try {
-                    if (!Files.exists(filePath.getParent())) {
-                        Files.createDirectories(filePath.getParent());
-                    }
-                    if (Files.exists(filePath)) {
-                        Files.delete(filePath);
-                    }
-                    Files.createFile(filePath);
-                    try (FileOutputStream stream = new FileOutputStream(filePathString)) {
-                        stream.write(request.getData());
-                    }
-                    response = new HTTPResponse(201);
-                    response.setData("Created new file".getBytes(), "txt");
-                } catch (IOException e) {
-//                    e.printStackTrace();
-                }
-                break;
-            }
-            case "DELETE": {
-                // curl -X DELETE localhost:8080/file
-
-                response = new HTTPResponse(500);
                 if (request.getRelativePath().equals("/")) {
                     response = new HTTPResponse(403);
-                    response.setData("Unable to remove root folder".getBytes(), "txt");
+                    response.setData("Unable to modify root".getBytes(), "txt");
                     return;
-                } else {
-                    if (Files.exists(filePath)) {
+                }
+
+                // X-Copy-From: /path/toanother/file2.txt used to copy from file to file
+                // curl -X PUT localhost:8080/newFile.txt --header "X-Copy-From: /path/toanother/file2.txt"
+
+                byte[] dataToWrite = null;
+
+                if (request.getHeaderValue("X-Copy-From") != null) {
+                    String pathToCopyFromString = request.getHeaderValue("X-Copy-From").replace("\\", "/");;
+                    if (pathToCopyFromString.charAt(0) != '/') {
+                        pathToCopyFromString = '/' + pathToCopyFromString;
+                    }
+                    pathToCopyFromString = serverFilesFolderPath + pathToCopyFromString;
+
+                    Path pathToCopyFrom = Paths.get(pathToCopyFromString);
+                    if (Files.exists(pathToCopyFrom)) {
                         try {
-                            Files.walk(filePath)
-                                    .sorted(Comparator.reverseOrder())
-                                    .map(Path::toFile)
-                                    .forEach(File::delete);
-                            response = new HTTPResponse(200);
-                            response.setData("Successfully deleted".getBytes(), "txt");
+                            dataToWrite = Files.readAllBytes(pathToCopyFrom);
                         } catch (IOException e) {
 //                            e.printStackTrace();
                         }
                     } else {
                         response = new HTTPResponse(404);
+                        response.setData("File to copy from does not exist".getBytes(), "txt");
                     }
+                } else {
+                    dataToWrite = request.getData();
+                }
+
+                if (dataToWrite != null) {
+                    try {
+                        if (!Files.exists(filePath.getParent())) {
+                            Files.createDirectories(filePath.getParent());
+                        }
+                        if (Files.exists(filePath)) {
+                            Files.delete(filePath);
+                        }
+                        Files.createFile(filePath);
+                        try (FileOutputStream stream = new FileOutputStream(filePathString)) {
+                            stream.write(dataToWrite);
+                        }
+                        response = new HTTPResponse(201);
+                        response.setData("Created new file".getBytes(), "txt");
+                    } catch (IOException e) {
+//                    e.printStackTrace();
+                    }
+                }
+                break;
+            }
+            case "DELETE": {
+                // curl -X DELETE localhost:8080/file
+                response = new HTTPResponse(500);
+                if (request.getRelativePath().equals("/")) {
+                    response = new HTTPResponse(403);
+                    response.setData("Unable to remove root folder".getBytes(), "txt");
+                    return;
+                }
+
+                if (Files.exists(filePath)) {
+                    try {
+                        Files.walk(filePath)
+                                .sorted(Comparator.reverseOrder())
+                                .map(Path::toFile)
+                                .forEach(File::delete);
+                        response = new HTTPResponse(200);
+                        response.setData("Successfully deleted".getBytes(), "txt");
+                    } catch (IOException e) {
+//                            e.printStackTrace();
+                    }
+                } else {
+                    response = new HTTPResponse(404);
                 }
 
                 break;
